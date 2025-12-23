@@ -21,6 +21,7 @@
             buildInputs = with pkgs; [
               qmk
               dos2unix
+              via
             ];
           };
         };
