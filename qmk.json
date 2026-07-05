@@ -1,6 +1,7 @@
 {
     "userspace_version": "1.1",
     "build_targets": [
-        ["fc660c", "via"]
+        ["fc660c", "meatcar"],
+        ["cipulot/ec_660c", "meatcar"]
     ]
 }
