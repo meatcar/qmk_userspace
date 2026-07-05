@@ -11,7 +11,8 @@ jobs:
     uses: qmk/.github/.github/workflows/qmk_userspace_build.yml@main
     with:
       qmk_repo: qmk/qmk_firmware
-      qmk_ref: master
+      # renovate: datasource=github-tags depName=qmk/qmk_firmware
+      qmk_ref: 0.33.8
 
   publish:
     name: 'QMK Userspace Publish'

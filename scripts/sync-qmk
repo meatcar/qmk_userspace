@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Sync the local qmk_firmware clone to the ref pinned in CI (Renovate-managed).
+# Run after Renovate merges a qmk_firmware bump, or after a fresh clone.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+ref=$(sed -n 's/^[[:space:]]*qmk_ref:[[:space:]]*//p' .github/workflows/build_binaries.yaml)
+[ -n "$ref" ] || { echo "could not read qmk_ref from workflow" >&2; exit 1; }
+
+echo "syncing qmk_firmware -> $ref"
+git -C qmk_firmware fetch --tags origin
+git -C qmk_firmware checkout "$ref"
+git -C qmk_firmware submodule update --init --recursive

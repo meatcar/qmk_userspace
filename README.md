@@ -1,59 +1,49 @@
-# QMK Userspace
+# fc660c-hasu
 
-This is a template repository which allows for an external set of QMK keymaps to be defined and compiled. This is useful for users who want to maintain their own keymaps without having to fork the main QMK repository.
+Personal [QMK Userspace](https://docs.qmk.fm/newbs_external_userspace) with my keymaps for
+two controllers living in a Leopold FC660C shell.
 
-## Howto configure your build targets
+| Keyboard          | Keymap    | Notes                                              |
+| ----------------- | --------- | -------------------------------------------------- |
+| `fc660c`          | `meatcar` | Hasu alt controller (ATmega32U4). Retired cable.   |
+| `fc660c`          | `via`     | Stock VIA keymap for the hasu board.               |
+| `cipulot/ec_660c` | `meatcar` | Cipulot EC660C (STM32F401, EC/Topre). Current.     |
 
-1. Run the normal `qmk setup` procedure if you haven't already done so -- see [QMK Docs](https://docs.qmk.fm/#/newbs) for details.
-1. Fork this repository
-1. Clone your fork to your local machine
-1. Enable userspace in QMK config using `qmk config user.overlay_dir="$(realpath qmk_userspace)"`
-1. Add a new keymap for your board using `qmk new-keymap`
-    * This will create a new keymap in the `keyboards` directory, in the same location that would normally be used in the main QMK repository. For example, if you wanted to add a keymap for the Planck, it will be created in `keyboards/planck/keymaps/<your keymap name>`
-    * You can also create a new keymap using `qmk new-keymap -kb <your_keyboard> -km <your_keymap>`
-    * Alternatively, add your keymap manually by placing it in the location specified above.
-    * `layouts/<layout name>/<your keymap name>/keymap.*` is also supported if you prefer the layout system
-1. Add your keymap(s) to the build by running `qmk userspace-add -kb <your_keyboard> -km <your_keymap>`
-    * This will automatically update your `qmk.json` file
-    * Corresponding `qmk userspace-remove -kb <your_keyboard> -km <your_keymap>` will delete it
-    * Listing the build targets can be done with `qmk userspace-list`
-1. Commit your changes
+The two `meatcar` keymaps are behavior-identical per physical key; only the extra ANSI-inert
+split positions on the EC660C differ.
 
-## Howto build with GitHub
+## Build
 
-1. In the GitHub Actions tab, enable workflows
-1. Push your changes above to your forked GitHub repository
-1. Look at the GitHub Actions for a new actions run
-1. Wait for the actions run to complete
-1. Inspect the Releases tab on your repository for the latest firmware build
-
-## Howto build locally
-
-1. Run the normal `qmk setup` procedure if you haven't already done so -- see [QMK Docs](https://docs.qmk.fm/#/newbs) for details.
-1. Fork this repository
-1. Clone your fork to your local machine
-1. `cd` into this repository's clone directory
-1. Set global userspace path: `qmk config user.overlay_dir="$(realpath .)"` -- you MUST be located in the cloned userspace location for this to work correctly
-    * This will be automatically detected if you've `cd`ed into your userspace repository, but the above makes your userspace available regardless of your shell location.
-1. Compile normally: `qmk compile -kb your_keyboard -km your_keymap` or `make your_keyboard:your_keymap`
-
-Alternatively, if you configured your build targets above, you can use `qmk userspace-compile` to build all of your userspace targets at once.
-
-## Extra info
-
-If you wish to point GitHub actions to a different repository, a different branch, or even a different keymap name, you can modify `.github/workflows/build_binaries.yml` to suit your needs.
-
-To override the `build` job, you can change the following parameters to use a different QMK repository or branch:
-```
-    with:
-      qmk_repo: qmk/qmk_firmware
-      qmk_ref: master
+```sh
+nix develop                                     # qmk CLI + tools
+qmk config user.overlay_dir="$(realpath .)"     # first time only
+qmk userspace-compile                           # all targets in qmk.json
+# or a single target:
+qmk compile -kb cipulot/ec_660c -km meatcar
 ```
 
-If you wish to manually manage `qmk_firmware` using git within the userspace repository, you can add `qmk_firmware` as a submodule in the userspace directory instead. GitHub Actions will automatically use the submodule at the pinned revision if it exists, otherwise it will use the default latest revision of `qmk_firmware` from the main repository.
+## Flash
 
-This can also be used to control which fork is used, though only upstream `qmk_firmware` will have support for external userspace until other manufacturers update their forks.
+The EC660C is `stm32-dfu`. Tap RESET on the mainboard to enter the bootloader, then:
 
-1. (First time only) `git submodule add https://github.com/qmk/qmk_firmware.git`
-1. (To update) `git submodule update --init --recursive`
-1. Commit your changes to your userspace repository
+```sh
+qmk flash -kb cipulot/ec_660c -km meatcar
+# or manually with the built .bin:
+sudo dfu-util -a 0 -d 0483:df11 -s 0x08000000:leave -D cipulot_ec_660c_meatcar.bin
+```
+
+EC boards need calibration after a flash (EEPROM reset). Run noise-floor + bottom-out in
+[usevia.app](https://usevia.app); `VIA_ENABLE = yes` keeps that menu available.
+
+The hasu `fc660c` is `atmel-dfu` and flashes `.hex` with `dfu-programmer` / `qmk flash`.
+
+## qmk_firmware pin
+
+`qmk_firmware/` is a local, untracked clone. The build version is pinned in
+`.github/workflows/build_binaries.yaml` (`qmk_ref`) as the single source of truth.
+[Renovate](renovate.json) opens PRs bumping it (and refreshing `flake.lock`). After a bump,
+sync the local clone:
+
+```sh
+./scripts/sync-qmk
+```

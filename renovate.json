@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "lockFileMaintenance": { "enabled": true },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/build_binaries\\.yaml$/"],
+      "matchStrings": [
+        "renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)\\s+qmk_ref:\\s*(?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchDepNames": ["qmk/qmk_firmware"],
+      "commitMessageTopic": "qmk_firmware",
+      "commitMessageExtra": "to {{newVersion}}"
+    }
+  ]
+}
