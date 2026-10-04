@@ -263,12 +263,12 @@ TEST_F(Adept, UnrelatedClickDoesNotBypassChordHold) {
     release(back);
 }
 
-TEST_F(Adept, MacosModeSuppressesHorizontalScrollNotPointerMotion) {
+TEST_F(Adept, StraightenedModeSelectsTheDominantAxisNotPointerMotion) {
     TestDriver driver;
     chord(back, right);
     EXPECT_EQ(layer_state, 2);
     press(scroll);
-    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 3, 0));
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 5, 0, 0));
     move(40, -24);
     release(scroll);
     EXPECT_MOUSE_REPORT(driver, (40, 24, 0, 0, 0));
@@ -278,6 +278,125 @@ TEST_F(Adept, MacosModeSuppressesHorizontalScrollNotPointerMotion) {
     EXPECT_MOUSE_REPORT(driver, (0, 0, 5, 3, 0));
     move(40, -24);
     release(scroll);
+}
+
+TEST_F(Adept, StraighteningFiltersJitterAndCanTurnBothWaysWhileLatched) {
+    TestDriver driver;
+    chord(back, right);
+    tap_key(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 4, 0));
+    move(0, -32);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_NO_MOUSE_REPORT(driver);
+    move(32, 0);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 4, 0, 0));
+    move(32, 0);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_NO_MOUSE_REPORT(driver);
+    move(0, 32);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, -4, 0));
+    move(0, 32);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_NO_MOUSE_REPORT(driver);
+    move(-32, 0);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, -4, 0, 0));
+    move(-32, 0);
+    tap_key(scroll);
+}
+
+class StraighteningAxis : public Adept, public testing::WithParamInterface<bool> {};
+
+TEST_P(StraighteningAxis, SwitchingRequiresMoreThanDoubleTheRecentMotion) {
+    TestDriver driver;
+    auto       movement = [this](int16_t primary, int16_t secondary) { move(GetParam() ? primary : secondary, GetParam() ? -secondary : -primary); };
+    chord(back, right);
+    tap_key(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, GetParam() ? 1 : 0, GetParam() ? 0 : 1, 0));
+    movement(8, 0);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_NO_MOUSE_REPORT(driver);
+    movement(0, 12);
+    movement(0, 1);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, GetParam() ? 0 : 1, GetParam() ? 1 : 0, 0));
+    movement(0, 7);
+    tap_key(scroll);
+}
+
+INSTANTIATE_TEST_CASE_P(BothAxes, StraighteningAxis, testing::Bool());
+
+TEST_F(Adept, StraighteningKeepsFractionsAcrossPausesButDiscardsTheSuppressedAxis) {
+    TestDriver driver;
+    chord(back, right);
+    tap_key(scroll);
+    EXPECT_NO_MOUSE_REPORT(driver);
+    move(3, -3);
+    idle_for(1000);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 1, 0));
+    move(1, -5);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_NO_MOUSE_REPORT(driver);
+    move(7, 0);
+    move(7, 0);
+    idle_for(1000);
+    VERIFY_AND_CLEAR(driver);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 1, 0, 0));
+    move(1, -1);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 4, 0));
+    move(0, -32);
+    tap_key(scroll);
+}
+
+TEST_F(Adept, StraighteningUsesBallDirectionBeforeViaSpeedAndPreservesButtons) {
+    TestDriver driver;
+    set(7, 1);
+    set(8, 4);
+    set(9, 1);
+    set(10, 1);
+    chord(back, right);
+    tap_key(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 0, 1));
+    press(left);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, -10, 1));
+    move(24, -40);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, -120, 0, 1));
+    move(120, 0);
+    EXPECT_EMPTY_MOUSE_REPORT(driver);
+    release(left);
+    tap_key(scroll);
+}
+
+TEST_F(Adept, StraighteningResetsWithScrollModeAndViaSettings) {
+    TestDriver driver;
+    chord(back, right);
+    press(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 4, 0, 0));
+    move(32, -8);
+    release(scroll);
+    press(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 1, 0));
+    move(0, -8);
+    release(scroll);
+    tap_key(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 4, 0, 0));
+    move(32, -8);
+    chord(back, right);
+    chord(back, right);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 1, 0));
+    move(0, -8);
+    set(7, 1);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, -32, 0, 0));
+    set(9, 1);
+    move(32, -8);
+    set(8, 4);
+    set(10, 1);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, -2, 0));
+    move(0, -8);
+    tap_key(scroll);
 }
 
 TEST_F(Adept, ChangingModeDiscardsFractionalScrollFromThePreviousMode) {

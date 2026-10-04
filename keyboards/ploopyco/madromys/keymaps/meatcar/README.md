@@ -26,12 +26,27 @@ stops while scrolling, but mouse buttons still work.
 
 | Chord | Action |
 | ----- | ------ |
-| Back + right click | Toggle normal layer 0 / macOS layer 1 |
+| Back + right click | Toggle free two-axis layer 0 / straightened layer 1 |
 | Forward + right click | Cycle the five configured DPI presets |
 
-Normal scrolling supports both axes. The macOS layer suppresses horizontal
-scrolling, even when the ball moves diagonally; ordinary pointer motion is unchanged.
-Both layers start with the same button mapping. This is a manual mode switch, not OS detection.
+Normal scrolling supports both axes. Layer 1 continuously straightens scrolling
+to one axis at a time, replacing the old vertical-only macOS workaround. Both
+horizontal and vertical scrolling work in this mode, on any OS. Ordinary pointer
+motion is unchanged, and both layers start with the same button mapping.
+
+The first movement chooses the stronger axis, with vertical preferred on an
+exact tie. Recent motion is smoothed, and the other axis must become more than
+twice as strong to switch. You can turn from vertical to horizontal scrolling
+without releasing the button, including while scrolling is latched. Pauses keep
+the selected axis and its fractional movement. Suppressed movement is discarded
+so it cannot cause a scroll jump after switching axes.
+
+Each nonzero motion report retains three quarters of the previous axis strengths
+and adds the new absolute motion. Axis selection uses ball movement before VIA
+speed divisors and reversal, so those settings do not bias the selected direction.
+Scroll-button transitions, layer changes, and scroll-setting edits clear the motion
+history and fractions. The smoothing and 2:1 threshold are fixed in firmware;
+the existing VIA definition and saved settings remain compatible.
 
 Press the two chord buttons within 50 ms, then hold both for 200 ms. A recognized
 chord consumes their ordinary clicks and fires once until released. Releasing a
@@ -96,20 +111,29 @@ make test-adept TEST_ARGS='--gtest_shuffle --gtest_repeat=20'
 ```
 
 The tests cover tap/hold boundaries, both chord orders, click suppression,
-fractional scrolling, independent axis settings, VIA limits and remappings,
-saved settings, and simulated reconnects. After flashing, check button feel,
-VIA connectivity, and persistence across a physical power cycle on the Adept.
+fractional scrolling, continuous straightening and its switching threshold,
+independent axis settings, VIA limits and remappings, saved settings, and simulated
+reconnects. After flashing, check button feel, axis switching, VIA connectivity,
+and persistence across a physical power cycle on the Adept. Native tests verify
+firmware reports, not how a particular OS or application interprets them.
 
 ## Sources and attribution
 
 - [Ryan Heisler's Adept customizations](https://blog.ryanheisler.com/blog/ploopy-adept/customize-ploopy-adept.html)
-  inspired combined momentary/toggled scrolling and the selectable vertical-only
-  macOS mode. His article's code was not copied. The macOS diagnosis is his report,
-  not a claim that every macOS version needs this workaround.
+  inspired combined momentary/toggled scrolling and the original selectable
+  vertical-only macOS mode, now replaced by continuous straightening. His article's
+  code was not copied. The macOS diagnosis is his report, not a claim that every
+  macOS version needs a workaround.
 - [plodah/ploopy_viamenus](https://github.com/plodah/ploopy_viamenus/blob/main/readme-resources/FEATURES.md)
   inspired editable DPI/scrolling menus. Its tap dance uses double-tap toggling;
   this keymap deliberately uses single-tap toggling. Its code and menu definitions
   were not imported.
+- Plodah's [dragscroll_straighten module](https://github.com/plodah/qmk_modules/blob/c5e18e69e94e81c460d5f3acfd22fedc52975c56/dragscroll_straighten/dragscroll_straighten.c#L39-L82)
+  and ViaMenus' [fractional scroll handling](https://github.com/plodah/ploopy_viamenus/blob/c13fbb74b676f6003b321d0bc48e31e17afd0f2e/users/viam/better_dragscroll.c#L123-L159)
+  informed continuous axis selection and discarding suppressed-axis fractions.
+  This keymap implements its own smoothed-motion selector with hysteresis and
+  emits at most one axis in straightened mode, including on ties. No code
+  from either source was copied.
 - [QMK 0.33.8 stock Adept keymap](https://github.com/qmk/qmk_firmware/blob/0.33.8/keyboards/ploopyco/madromys/keymaps/default/keymap.c)
   supplies the six-button layout retained in `keymap.c`. Its copyright notices for
   Colin Lam, Christopher Courtney, and Sunjun Kim remain in that file. The header

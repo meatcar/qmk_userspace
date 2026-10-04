@@ -7,9 +7,9 @@
 
 #include QMK_KEYBOARD_H
 
-enum layers { NORMAL, MACOS };
+enum layers { NORMAL, STRAIGHTENED };
 
-const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {[NORMAL] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3), [MACOS] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3)};
+const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {[NORMAL] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3), [STRAIGHTENED] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3)};
 
 enum chords { SWITCH_MODE, CYCLE_DPI };
 const uint16_t PROGMEM mode_chord[] = {MS_BTN4, MS_BTN2, COMBO_END};
@@ -32,12 +32,16 @@ static adept_settings_t       settings;
 static bool                   scroll_held, scroll_latched, tap_eligible;
 static uint32_t               scroll_pressed_at;
 static int32_t                scroll_h, scroll_v;
-static uint8_t                chord_down, pending_chord;
-static uint32_t               chord_pressed_at[3];
-static bool                   chord_fired;
+static uint32_t               recent_h, recent_v;
+static enum { AXIS_UNDECIDED, AXIS_HORIZONTAL, AXIS_VERTICAL } scroll_axis;
+static uint8_t  chord_down, pending_chord;
+static uint32_t chord_pressed_at[3];
+static bool     chord_fired;
 
-static void reset_scroll_remainders(void) {
+static void reset_scroll_state(void) {
     scroll_h = scroll_v = 0;
+    recent_h = recent_v = 0;
+    scroll_axis         = AXIS_UNDECIDED;
 }
 
 void eeconfig_init_user(void) {
@@ -117,7 +121,7 @@ void housekeeping_task_user(void) {
     if (timer_elapsed32(chord_pressed_at[index]) < settings.chord_hold_ms || timer_elapsed32(chord_pressed_at[2]) < settings.chord_hold_ms) return;
     chord_fired = true;
     if (pending_chord == SWITCH_MODE + 1) {
-        layer_invert(MACOS);
+        layer_invert(STRAIGHTENED);
     } else {
         cycle_dpi();
     }
@@ -135,7 +139,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         scroll_latched = tap_eligible && timer_elapsed32(scroll_pressed_at) < settings.tap_ms;
         tap_eligible   = false;
     }
-    reset_scroll_remainders();
+    reset_scroll_state();
     return false;
 }
 
@@ -150,20 +154,34 @@ static int8_t scroll_steps(int32_t *remainder, uint8_t divisor) {
 report_mouse_t pointing_device_task_user(report_mouse_t report) {
     if (!scroll_held && !scroll_latched) return report;
     if (scroll_held && (report.x || report.y)) tap_eligible = false;
-    if (!(layer_state & (1u << MACOS))) {
-        scroll_h += settings.invert_h ? -(int32_t)report.x : report.x;
-        report.h = scroll_steps(&scroll_h, settings.divisor_h);
-    } else {
-        report.h = 0;
-    }
+    scroll_h += settings.invert_h ? -(int32_t)report.x : report.x;
     scroll_v += settings.invert_v ? -(int32_t)report.y : report.y;
+    if (layer_state & (1u << STRAIGHTENED)) {
+        if (report.x || report.y) {
+            uint32_t h = report.x < 0 ? -(int32_t)report.x : report.x;
+            uint32_t v = report.y < 0 ? -(int32_t)report.y : report.y;
+            recent_h   = recent_h * 3 / 4 + h;
+            recent_v   = recent_v * 3 / 4 + v;
+            if (scroll_axis == AXIS_UNDECIDED)
+                scroll_axis = recent_h > recent_v ? AXIS_HORIZONTAL : AXIS_VERTICAL;
+            else if (scroll_axis == AXIS_HORIZONTAL && recent_v > recent_h * 2)
+                scroll_axis = AXIS_VERTICAL;
+            else if (scroll_axis == AXIS_VERTICAL && recent_h > recent_v * 2)
+                scroll_axis = AXIS_HORIZONTAL;
+        }
+        if (scroll_axis == AXIS_HORIZONTAL)
+            scroll_v = 0;
+        else
+            scroll_h = 0;
+    }
+    report.h = scroll_steps(&scroll_h, settings.divisor_h);
     report.v = scroll_steps(&scroll_v, settings.divisor_v);
     report.x = report.y = 0;
     return report;
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
-    reset_scroll_remainders();
+    reset_scroll_state();
     return state;
 }
 
@@ -256,5 +274,5 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
     else
         *byte = value;
     if (id <= DPI_LAST) apply_dpi();
-    if (id >= DIVISOR_H && id <= INVERT_V) reset_scroll_remainders();
+    if (id >= DIVISOR_H && id <= INVERT_V) reset_scroll_state();
 }
