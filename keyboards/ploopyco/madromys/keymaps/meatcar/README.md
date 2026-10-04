@@ -15,9 +15,9 @@ single-button tap/hold scrolling, two held chords, and saved VIA settings.
 | Bottom right | Middle click |
 
 Scrolling starts as soon as you press its button. Releasing before the tap cutoff,
-without moving the ball, latches scrolling on. Moving the ball or holding past the
-cutoff makes it momentary. If scrolling was already latched, pressing the button
-clears the latch; it still scrolls while held and stops on release.
+without moving the ball, latches scrolling on. Moving the ball or holding for at
+least the cutoff makes it momentary. If scrolling was already latched, pressing
+the button clears the latch; it still scrolls while held and stops on release.
 
 Fractional scroll movement accumulates instead of being discarded. Pointer motion
 stops while scrolling, but mouse buttons still work.
@@ -47,7 +47,7 @@ mappings because it adds saved settings storage. Back up mappings before flashin
 
 In [usevia.app](https://usevia.app), enable the Design tab in Settings. Leave
 **Use V2 definitions** off, then load [via.json](via.json) in Design and authorize
-the Adept. Enable numerical slider values in VIA Settings if you want exact numbers.
+the Adept. In Settings, choose **Slider Mode → Slider & Input Field** for exact numbers.
 The matching firmware and JSON are both required; the public stock definition
 does not contain these menus.
 
@@ -72,13 +72,33 @@ From the repository root:
 
 ```sh
 nix develop
-scripts/test-adept
+make test-adept -j4
 qmk compile -kb ploopyco/madromys/rev1_001 -km meatcar
 ```
 
-The host tests compile the actual keymap and QMK combo engine. Only hardware,
-clock, EEPROM, and report delivery boundaries are replaced. They do not replace
-an on-device check of button feel, VIA connectivity, or power-cycle persistence.
+The tests use QMK's native GoogleTest build and fixtures. They compile the actual
+keymap, Ploopy implementation, combo engine, mouse-key handling, and VIA command
+handler. QMK supplies the simulated matrix, clock, sensor motion, host reports,
+and RAM-backed EEPROM. Sensor DPI read/write callbacks are supplied by the tests.
+No test changes are needed inside the firmware checkout.
+
+QMK 0.33.8 does not discover tests in external userspace. The Makefile target
+passes this directory to its native test build and runs the resulting executable.
+The fixture's keymap override is renamed so VIA's real EEPROM mappings are used.
+The six Adept buttons occupy the first row of QMK's larger native test matrix.
+AddressSanitizer and UndefinedBehaviorSanitizer check the native test executable.
+
+Run one test, or repeat the suite in shuffled order:
+
+```sh
+make test-adept TEST_ARGS='--gtest_filter=Adept.ViaTimingSettingsControlTapWindowAndHold'
+make test-adept TEST_ARGS='--gtest_shuffle --gtest_repeat=20'
+```
+
+The tests cover tap/hold boundaries, both chord orders, click suppression,
+fractional scrolling, independent axis settings, VIA limits and remappings,
+saved settings, and simulated reconnects. After flashing, check button feel,
+VIA connectivity, and persistence across a physical power cycle on the Adept.
 
 ## Sources and attribution
 
@@ -95,17 +115,23 @@ an on-device check of button feel, VIA connectivity, or power-cycle persistence.
   Colin Lam, Christopher Courtney, and Sunjun Kim remain in that file. The header
   records the custom changes and date.
 - [QMK Adept hardware layout](https://github.com/qmk/qmk_firmware/blob/0.33.8/keyboards/ploopyco/madromys/info.json)
-  supplies the physical positions and matrix coordinates adapted in `via.json`.
-  That definition's custom menus were written for this keymap.
+  supplies the physical positions and matrix coordinates adapted in `via.json`
+  and `tests/adept.h`, plus the eight VIA layers used by the tests.
+  That definition's custom menus were written for this keymap. The test sensor's
+  Y-axis inversion matches the [Adept hardware configuration](https://github.com/qmk/qmk_firmware/blob/0.33.8/keyboards/ploopyco/madromys/config.h).
 - [QMK's Ploopy implementation](https://github.com/qmk/qmk_firmware/blob/0.33.8/keyboards/ploopyco/ploopyco.c)
   supplies the live DPI array, active-preset storage, and cycle function used here.
   The [QMK combo engine](https://github.com/qmk/qmk_firmware/blob/0.33.8/quantum/process_keycode/process_combo.c)
-  handles chord recognition. These sources remain upstream, with their notices intact.
+  handles chord recognition. Tests compile both upstream sources without copying
+  or modifying them; their copyright and license notices remain intact.
+- [QMK's native test framework](https://github.com/qmk/qmk_firmware/tree/0.33.8/tests/test_common)
+  supplies the GoogleTest fixtures and simulated inputs/reports used in
+  `tests/test_adept.cpp`. These upstream files retain their notices and licenses.
 - [VIA custom UI documentation](https://www.caniusevia.com/docs/custom_ui) defines
   the menu bindings and command protocol. [Ploopy's programming guide](https://ploopyco.github.io/adept-trackball/appendices/programming/)
   documents the bootloader and recovery procedure.
 
-The firmware changes, test sources, script, and VIA definition are Copyright 2026
+The firmware changes, test sources, and VIA definition are Copyright 2026
 meatcar and licensed under GPL-2.0-or-later, consistent with the retained QMK code.
 See the repository [license](../../../../../LICENSE). Source links above distinguish
-retained/adapted material from inspiration; attribution alone is not a license grant.
+retained/adapted material from inspiration.

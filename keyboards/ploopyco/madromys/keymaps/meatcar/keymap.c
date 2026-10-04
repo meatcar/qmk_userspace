@@ -1,5 +1,5 @@
 // Copyright 2023 Colin Lam (Ploopy Corporation)
-// Copyright 2020 Christopher Courtney (@drashna)
+// Copyright 2020 Christopher Courtney, aka Drashna Jael're (@drashna) <drashna@live.com>
 // Copyright 2019 Sunjun Kim
 // Copyright 2026 meatcar (@meatcar)
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -9,45 +9,32 @@
 
 enum layers { NORMAL, MACOS };
 
-const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    [NORMAL] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3),
-    [MACOS] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3)
-};
+const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {[NORMAL] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3), [MACOS] = LAYOUT(MS_BTN4, MS_BTN5, DRAG_SCROLL, MS_BTN2, MS_BTN1, MS_BTN3)};
 
 enum chords { SWITCH_MODE, CYCLE_DPI };
 const uint16_t PROGMEM mode_chord[] = {MS_BTN4, MS_BTN2, COMBO_END};
-const uint16_t PROGMEM dpi_chord[] = {MS_BTN5, MS_BTN2, COMBO_END};
-combo_t key_combos[] = {
-    [SWITCH_MODE] = COMBO_ACTION(mode_chord),
-    [CYCLE_DPI] = COMBO_ACTION(dpi_chord)
-};
+const uint16_t PROGMEM dpi_chord[]  = {MS_BTN5, MS_BTN2, COMBO_END};
+combo_t                key_combos[] = {[SWITCH_MODE] = COMBO_ACTION(mode_chord), [CYCLE_DPI] = COMBO_ACTION(dpi_chord)};
 
 typedef struct {
     uint16_t dpi[5];
     uint16_t tap_ms, chord_window_ms, chord_hold_ms;
-    uint8_t divisor_h, divisor_v;
-    uint8_t invert_h, invert_v;
+    uint8_t  divisor_h, divisor_v;
+    uint8_t  invert_h, invert_v;
 } adept_settings_t;
 
 _Static_assert(sizeof(adept_settings_t) == EECONFIG_USER_DATA_SIZE, "Update EEPROM size and version with the settings layout");
 
-enum setting_ids {
-    ACTIVE_DPI = 1, DPI_FIRST, DPI_LAST = DPI_FIRST + 4,
-    DIVISOR_H, DIVISOR_V, INVERT_H, INVERT_V, TAP_MS, CHORD_WINDOW_MS, CHORD_HOLD_MS
-};
+enum setting_ids { ACTIVE_DPI = 1, DPI_FIRST, DPI_LAST = DPI_FIRST + 4, DIVISOR_H, DIVISOR_V, INVERT_H, INVERT_V, TAP_MS, CHORD_WINDOW_MS, CHORD_HOLD_MS };
 
-static const adept_settings_t defaults = {
-    .dpi = {600, 900, 1200, 1600, 2400},
-    .tap_ms = 200, .chord_window_ms = 50, .chord_hold_ms = 200,
-    .divisor_h = 8, .divisor_v = 8
-};
-static adept_settings_t settings;
-static bool scroll_held, scroll_latched, tap_eligible;
-static uint32_t scroll_pressed_at;
-static int32_t scroll_h, scroll_v;
-static uint8_t chord_down, pending_chord;
-static uint32_t chord_pressed_at[3];
-static bool chord_fired;
+static const adept_settings_t defaults = {.dpi = {600, 900, 1200, 1600, 2400}, .tap_ms = 200, .chord_window_ms = 50, .chord_hold_ms = 200, .divisor_h = 8, .divisor_v = 8};
+static adept_settings_t       settings;
+static bool                   scroll_held, scroll_latched, tap_eligible;
+static uint32_t               scroll_pressed_at;
+static int32_t                scroll_h, scroll_v;
+static uint8_t                chord_down, pending_chord;
+static uint32_t               chord_pressed_at[3];
+static bool                   chord_fired;
 
 static void reset_scroll_remainders(void) {
     scroll_h = scroll_v = 0;
@@ -62,28 +49,22 @@ static bool settings_valid(void) {
     for (uint8_t i = 0; i < ARRAY_SIZE(settings.dpi); i++) {
         if (settings.dpi[i] < 100 || settings.dpi[i] > 12000 || settings.dpi[i] % 100) return false;
     }
-    return settings.divisor_h >= 1 && settings.divisor_h <= 64 &&
-           settings.divisor_v >= 1 && settings.divisor_v <= 64 &&
-           settings.invert_h <= 1 && settings.invert_v <= 1 &&
-           settings.tap_ms >= 50 && settings.tap_ms <= 1000 &&
-           settings.chord_window_ms >= 10 && settings.chord_window_ms <= 250 &&
-           settings.chord_hold_ms >= 50 && settings.chord_hold_ms <= 2000;
+    return settings.divisor_h >= 1 && settings.divisor_h <= 64 && settings.divisor_v >= 1 && settings.divisor_v <= 64 && settings.invert_h <= 1 && settings.invert_v <= 1 && settings.tap_ms >= 50 && settings.tap_ms <= 1000 && settings.chord_window_ms >= 10 && settings.chord_window_ms <= 250 && settings.chord_hold_ms >= 50 && settings.chord_hold_ms <= 2000;
 }
 
 static void apply_dpi(void) {
-    for (uint8_t i = 0; i < ARRAY_SIZE(settings.dpi); i++) dpi_array[i] = settings.dpi[i];
+    for (uint8_t i = 0; i < ARRAY_SIZE(settings.dpi); i++)
+        dpi_array[i] = settings.dpi[i];
     pointing_device_set_cpi(dpi_array[keyboard_config.dpi_config]);
 }
 
 void keyboard_post_init_user(void) {
-    if (!eeconfig_is_user_datablock_valid() ||
-        eeconfig_read_user_datablock(&settings, 0, sizeof(settings)) != sizeof(settings) ||
-        !settings_valid()) eeconfig_init_user();
+    if (!eeconfig_is_user_datablock_valid() || eeconfig_read_user_datablock(&settings, 0, sizeof(settings)) != sizeof(settings) || !settings_valid()) eeconfig_init_user();
     if (keyboard_config.dpi_config >= ARRAY_SIZE(settings.dpi)) keyboard_config.dpi_config = 1;
     apply_dpi();
     scroll_held = scroll_latched = tap_eligible = false;
     chord_down = pending_chord = 0;
-    chord_fired = false;
+    chord_fired                = false;
     default_layer_set(1u << NORMAL);
     layer_clear();
 }
@@ -97,10 +78,17 @@ bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) {
     keycode = keymap_key_to_keycode(NORMAL, record->event.key);
     uint8_t index;
     switch (keycode) {
-        case MS_BTN4: index = 0; break;
-        case MS_BTN5: index = 1; break;
-        case MS_BTN2: index = 2; break;
-        default: return true;
+        case MS_BTN4:
+            index = 0;
+            break;
+        case MS_BTN5:
+            index = 1;
+            break;
+        case MS_BTN2:
+            index = 2;
+            break;
+        default:
+            return true;
     }
     if (record->event.pressed) {
         chord_down |= 1u << index;
@@ -115,7 +103,7 @@ bool pre_process_record_user(uint16_t keycode, keyrecord_t *record) {
 void process_combo_event(uint16_t combo_index, bool pressed) {
     if (pressed) {
         pending_chord = combo_index + 1;
-        chord_fired = false;
+        chord_fired   = false;
     } else if (pending_chord == combo_index + 1) {
         pending_chord = 0;
     }
@@ -124,10 +112,9 @@ void process_combo_event(uint16_t combo_index, bool pressed) {
 void housekeeping_task_user(void) {
     if (!pending_chord || chord_fired) return;
     uint8_t index = pending_chord == SWITCH_MODE + 1 ? 0 : 1;
-    uint8_t mask = (1u << index) | (1u << 2);
+    uint8_t mask  = (1u << index) | (1u << 2);
     if ((chord_down & mask) != mask) return;
-    if (timer_elapsed32(chord_pressed_at[index]) < settings.chord_hold_ms ||
-        timer_elapsed32(chord_pressed_at[2]) < settings.chord_hold_ms) return;
+    if (timer_elapsed32(chord_pressed_at[index]) < settings.chord_hold_ms || timer_elapsed32(chord_pressed_at[2]) < settings.chord_hold_ms) return;
     chord_fired = true;
     if (pending_chord == SWITCH_MODE + 1) {
         layer_invert(MACOS);
@@ -139,14 +126,14 @@ void housekeeping_task_user(void) {
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (keycode != DRAG_SCROLL) return true;
     if (record->event.pressed) {
-        tap_eligible = !scroll_latched;
-        scroll_latched = false;
-        scroll_held = true;
+        tap_eligible      = !scroll_latched;
+        scroll_latched    = false;
+        scroll_held       = true;
         scroll_pressed_at = timer_read32();
     } else {
-        scroll_held = false;
+        scroll_held    = false;
         scroll_latched = tap_eligible && timer_elapsed32(scroll_pressed_at) < settings.tap_ms;
-        tap_eligible = false;
+        tap_eligible   = false;
     }
     reset_scroll_remainders();
     return false;
@@ -196,26 +183,55 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
         return;
     }
 
-    uint8_t id = data[2];
-    uint8_t *byte = NULL;
-    uint16_t *word = NULL;
-    uint16_t minimum = 0, maximum = 1;
-    bool dpi_preset = id >= DPI_FIRST && id <= DPI_LAST;
+    uint8_t   id      = data[2];
+    uint8_t  *byte    = NULL;
+    uint16_t *word    = NULL;
+    uint16_t  minimum = 0, maximum = 1;
+    bool      dpi_preset = id >= DPI_FIRST && id <= DPI_LAST;
     if (dpi_preset) {
-        word = &settings.dpi[id - DPI_FIRST];
+        word    = &settings.dpi[id - DPI_FIRST];
         minimum = 1;
         maximum = 120;
     } else {
         switch (id) {
-            case ACTIVE_DPI: byte = &keyboard_config.dpi_config; maximum = 4; break;
-            case DIVISOR_H: byte = &settings.divisor_h; minimum = 1; maximum = 64; break;
-            case DIVISOR_V: byte = &settings.divisor_v; minimum = 1; maximum = 64; break;
-            case INVERT_H: byte = &settings.invert_h; break;
-            case INVERT_V: byte = &settings.invert_v; break;
-            case TAP_MS: word = &settings.tap_ms; minimum = 50; maximum = 1000; break;
-            case CHORD_WINDOW_MS: word = &settings.chord_window_ms; minimum = 10; maximum = 250; break;
-            case CHORD_HOLD_MS: word = &settings.chord_hold_ms; minimum = 50; maximum = 2000; break;
-            default: data[0] = id_unhandled; return;
+            case ACTIVE_DPI:
+                byte    = &keyboard_config.dpi_config;
+                maximum = 4;
+                break;
+            case DIVISOR_H:
+                byte    = &settings.divisor_h;
+                minimum = 1;
+                maximum = 64;
+                break;
+            case DIVISOR_V:
+                byte    = &settings.divisor_v;
+                minimum = 1;
+                maximum = 64;
+                break;
+            case INVERT_H:
+                byte = &settings.invert_h;
+                break;
+            case INVERT_V:
+                byte = &settings.invert_v;
+                break;
+            case TAP_MS:
+                word    = &settings.tap_ms;
+                minimum = 50;
+                maximum = 1000;
+                break;
+            case CHORD_WINDOW_MS:
+                word    = &settings.chord_window_ms;
+                minimum = 10;
+                maximum = 250;
+                break;
+            case CHORD_HOLD_MS:
+                word    = &settings.chord_hold_ms;
+                minimum = 50;
+                maximum = 2000;
+                break;
+            default:
+                data[0] = id_unhandled;
+                return;
         }
     }
     bool wide = maximum > 255;
@@ -235,8 +251,10 @@ void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
         data[0] = id_unhandled;
         return;
     }
-    if (word) *word = dpi_preset ? value * 100 : value;
-    else *byte = value;
+    if (word)
+        *word = dpi_preset ? value * 100 : value;
+    else
+        *byte = value;
     if (id <= DPI_LAST) apply_dpi();
     if (id >= DIVISOR_H && id <= INVERT_V) reset_scroll_remainders();
 }
