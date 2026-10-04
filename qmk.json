@@ -2,6 +2,7 @@
     "userspace_version": "1.1",
     "build_targets": [
         ["fc660c", "meatcar"],
-        ["cipulot/ec_660c", "meatcar"]
+        ["cipulot/ec_660c", "meatcar"],
+        ["ploopyco/madromys/rev1_001", "meatcar"]
     ]
 }

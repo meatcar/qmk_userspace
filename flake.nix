@@ -1,5 +1,5 @@
 {
-  description = "QMK userspace: Leopold FC660C (hasu) and Cipulot EC660C keymaps";
+  description = "QMK userspace: Leopold FC660C, Cipulot EC660C, and Ploopy Adept keymaps";
 
   inputs = {
     # see docs at https://flake.parts/
