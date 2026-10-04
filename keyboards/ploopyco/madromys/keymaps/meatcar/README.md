@@ -1,7 +1,9 @@
 # Ploopy Adept controls
 
 This keymap keeps the stock button positions and pointer orientation. It adds
-single-button tap/hold scrolling, two held chords, and saved VIA settings.
+single-button tap/hold scrolling, selectable continuous straightening, two held
+chords, and saved VIA settings. QMK calls the Adept `madromys`; the build target
+is `ploopyco/madromys/rev1_001:meatcar`.
 
 ## Buttons and scrolling
 
@@ -46,7 +48,7 @@ and adds the new absolute motion. Axis selection uses ball movement before VIA
 speed divisors and reversal, so those settings do not bias the selected direction.
 Scroll-button transitions, layer changes, and scroll-setting edits clear the motion
 history and fractions. The smoothing and 2:1 threshold are fixed in firmware;
-the existing VIA definition and saved settings remain compatible.
+they are not VIA settings.
 
 Press the two chord buttons within 50 ms, then hold both for 200 ms. A recognized
 chord consumes their ordinary clicks and fires once until released. Releasing a
@@ -56,9 +58,11 @@ delay when used separately. Chords follow the button assignments on VIA layer 0.
 
 ## VIA settings
 
-Flash `ploopyco_madromys_rev1_001_meatcar.uf2`. Hold bottom-left while reconnecting
-to enter the bootloader and reset EEPROM. This first installation resets old VIA
-mappings because it adds saved settings storage. Back up mappings before flashing.
+Build and flash `ploopyco_madromys_rev1_001_meatcar.uf2` using the
+[repository instructions](../../../../../README.md#ploopy-adept). Holding
+bottom-left while reconnecting enters the bootloader and resets EEPROM, including
+VIA mappings and saved settings. Back them up before flashing. QMK also resets
+VIA mappings when the firmware build date changes.
 
 In [usevia.app](https://usevia.app), enable the Design tab in Settings. Leave
 **Use V2 definitions** off, then load [via.json](via.json) in Design and authorize
@@ -68,13 +72,15 @@ does not contain these menus.
 
 | Menu | Settings and defaults |
 | ---- | --------------------- |
-| DPI | Active preset; five presets: 600, 900, 1200, 1600, 2400 DPI |
+| DPI | Active preset: 2, at 900 DPI; five presets: 600, 900, 1200, 1600, 2400 DPI |
 | Scrolling | Horizontal/vertical divisors: 8 each; direction reversal: off |
 | Advanced | Tap cutoff: 200 ms; chord press window: 50 ms; chord hold: 200 ms |
 
 DPI sliders use units of 100 DPI: a value of 9 means 900 DPI. The range is
-100–12000 DPI in 100-DPI steps. Scroll divisors range from 1–64; higher values
-scroll more slowly. Direction reversal affects scrolling, not pointer movement.
+100–12000 DPI in 100-DPI steps. To change the current DPI, select the active
+preset and edit its corresponding slider. Scroll divisors range from 1–64;
+higher values scroll more slowly. Direction reversal affects scrolling, not
+pointer movement.
 
 Settings take effect immediately. VIA's save command persists them on the device.
 The DPI chord uses the editable presets and saves its active preset. Reconnecting
@@ -83,7 +89,8 @@ Hold bottom-left during connection to reset all saved settings and mappings.
 
 ## Build and test
 
-From the repository root:
+Complete the [repository setup](../../../../../README.md#setup-and-build) first.
+Then run from the repository root:
 
 ```sh
 nix develop
