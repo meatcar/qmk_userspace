@@ -7,7 +7,7 @@ Leopold FC660C controllers and a Ploopy Adept trackball.
 | ------ | ------ | ------------- |
 | `fc660c` | [`meatcar`](keyboards/fc660c/keymaps/meatcar/README.md) | Hasu controller, ATmega32U4; fixed keyboard map without VIA |
 | `cipulot/ec_660c` | `meatcar` | Cipulot controller, STM32F401; keyboard map with VIA and EC settings |
-| `ploopyco/madromys/rev1_001` | [`meatcar`](keyboards/ploopyco/madromys/keymaps/meatcar/README.md) | Ploopy Adept, RP2040; tap/hold scrolling, straightening, DPI and VIA settings |
+| `ploopyco/madromys/rev1_001` | [`meatcar`](keyboards/ploopyco/madromys/keymaps/meatcar/README.md) | Ploopy Adept, RP2040; scrolling, straightening, pointer acceleration and VIA settings |
 | `fc660c` | [`via`](keyboards/fc660c/keymaps/via/README.md) | Hasu controller; stock-style defaults with VIA remapping, built separately |
 
 The keyboard `meatcar` maps share the ANSI typing layout and Fn navigation
@@ -89,8 +89,9 @@ qmk flash -kb fc660c -km meatcar
 ### Ploopy Adept
 
 The Adept is called `madromys` in QMK. Its `meatcar` keymap keeps the stock button
-positions, adds tap/hold scrolling, selectable continuous straightening, and
-mode/DPI chords, and exposes saved DPI, scrolling, and timing settings in VIA. See the
+positions, adds tap/hold scrolling, continuous straightening, and mode/DPI chords,
+and exposes saved DPI, scrolling, and timing settings in VIA. Normal mode adds
+pointer acceleration; layer 1 leaves it disabled for macOS. See the
 [feature guide and source attribution](keyboards/ploopyco/madromys/keymaps/meatcar/README.md)
 for controls and loading the matching VIA definition.
 

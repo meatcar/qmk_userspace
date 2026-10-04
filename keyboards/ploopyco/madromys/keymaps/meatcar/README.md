@@ -1,9 +1,9 @@
 # Ploopy Adept controls
 
 This keymap keeps the stock button positions and pointer orientation. It adds
-single-button tap/hold scrolling, selectable continuous straightening, two held
-chords, and saved VIA settings. QMK calls the Adept `madromys`; the build target
-is `ploopyco/madromys/rev1_001:meatcar`.
+single-button tap/hold scrolling, continuous straightening, pointer acceleration,
+two held chords, and saved VIA settings. QMK calls the Adept `madromys`; the build
+target is `ploopyco/madromys/rev1_001:meatcar`.
 
 ## Buttons and scrolling
 
@@ -33,8 +33,8 @@ stops while scrolling, but mouse buttons still work.
 
 Normal scrolling supports both axes. Layer 1 continuously straightens scrolling
 to one axis at a time, replacing the old vertical-only macOS workaround. Both
-horizontal and vertical scrolling work in this mode, on any OS. Ordinary pointer
-motion is unchanged, and both layers start with the same button mapping.
+horizontal and vertical scrolling work in this mode, on any OS. Both layers
+start with the same button mapping; layer 1 also bypasses pointer acceleration.
 
 The first movement chooses the stronger axis, with vertical preferred on an
 exact tie. Recent motion is smoothed, and the other axis must become more than
@@ -55,6 +55,30 @@ chord consumes their ordinary clicks and fires once until released. Releasing a
 recognized chord early does nothing. Pressing the buttons too far apart sends
 ordinary clicks instead. Back, Forward, and right-click have a short recognition
 delay when used separately. Chords follow the button assignments on VIA layer 0.
+
+## Pointer acceleration
+
+Normal layer 0 uses Drashna's pointing-device acceleration module. Slow movement
+has about 20% of the selected DPI's sensitivity; fast movement approaches the
+full selected DPI. The DPI presets are unchanged. The curve defaults are takeoff
+2.0, growth rate 0.25, offset 2.2, and lower limit 0.2.
+
+Layer 1 bypasses firmware acceleration for macOS. The module's
+[macOS guidance](https://github.com/drashna/qmk_modules/blob/eb0ea42b4a0179b562071dc36eeba4a1c0d10873/pointing_device_accel/README.md#limitations)
+describes host smoothing that can distort the firmware curve; it does not require
+disabling firmware acceleration. This keymap leaves it off on layer 1 by choice.
+Host-side acceleration and smoothing are unchanged. Back + right click
+switches both the scrolling mode and the acceleration policy. Held and latched
+scrolling bypass acceleration in either layer, so scroll divisors and axis
+selection continue to use raw ball movement.
+
+Disable OS acceleration on Linux or Windows to avoid stacking two curves.
+To tune the firmware curve, add `POINTING_DEVICE_ACCEL_*` overrides to
+[config.h](config.h), using the names in the
+[upstream configuration guide](https://github.com/drashna/qmk_modules/blob/eb0ea42b4a0179b562071dc36eeba4a1c0d10873/pointing_device_accel/README.md#configuration).
+These parameters are not exposed in VIA and load from firmware defaults on
+reconnect. The module refreshes its cached DPI after a pause longer than 200 ms;
+pause after changing DPI before judging the curve.
 
 ## VIA settings
 
@@ -100,12 +124,17 @@ qmk compile -kb ploopyco/madromys/rev1_001 -km meatcar
 
 The tests use QMK's native GoogleTest build and fixtures. They compile the actual
 keymap, Ploopy implementation, combo engine, mouse-key handling, and VIA command
-handler. QMK supplies the simulated matrix, clock, sensor motion, host reports,
-and RAM-backed EEPROM. Sensor DPI read/write callbacks are supplied by the tests.
+handler, plus the unmodified acceleration module and QMK-generated module hooks.
+QMK supplies the simulated matrix, clock, sensor motion, host reports, and
+RAM-backed EEPROM. Sensor DPI read/write callbacks are supplied by the tests.
 No test changes are needed inside the firmware checkout.
 
 QMK 0.33.8 does not discover tests in external userspace. The Makefile target
 passes this directory to its native test build and runs the resulting executable.
+It also generates the module hooks for native tests from the same `keymap.json`
+used by firmware builds. Scrolling and VIA tests disable acceleration to isolate
+those behaviors; acceleration tests enable the actual module and exercise host
+reports for both layers and scroll states.
 The fixture's keymap override is renamed so VIA's real EEPROM mappings are used.
 The six Adept buttons occupy the first row of QMK's larger native test matrix.
 AddressSanitizer and UndefinedBehaviorSanitizer check the native test executable.
@@ -119,13 +148,19 @@ make test-adept TEST_ARGS='--gtest_shuffle --gtest_repeat=20'
 
 The tests cover tap/hold boundaries, both chord orders, click suppression,
 fractional scrolling, continuous straightening and its switching threshold,
-independent axis settings, VIA limits and remappings, saved settings, and simulated
-reconnects. After flashing, check button feel, axis switching, VIA connectivity,
-and persistence across a physical power cycle on the Adept. Native tests verify
+pointer acceleration and bypasses, extended pointer reports, independent axis
+settings, VIA limits and remappings, saved settings, and simulated reconnects.
+After flashing, check pointer feel, axis switching, VIA connectivity, and
+persistence across a physical power cycle on the Adept. Native tests verify
 firmware reports, not how a particular OS or application interprets them.
 
 ## Sources and attribution
 
+- [Drashna's pointing-device acceleration module](https://github.com/drashna/qmk_modules/tree/eb0ea42b4a0179b562071dc36eeba4a1c0d10873/pointing_device_accel)
+  is vendored unchanged under `modules/drashna/pointing_device_accel`. Its copyright
+  notices for Christopher Courtney, burkfers, and Wimads remain intact. See the
+  [dependency record and license](../../../../../modules/drashna/README.md) for
+  the compatible revision, copied files, and disabled optional VIA integration.
 - [Ryan Heisler's Adept customizations](https://blog.ryanheisler.com/blog/ploopy-adept/customize-ploopy-adept.html)
   inspired combined momentary/toggled scrolling and the original selectable
   vertical-only macOS mode, now replaced by continuous straightening. His article's

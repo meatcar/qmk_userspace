@@ -1,0 +1,5 @@
+{
+    "keyboard": "ploopyco/madromys/rev1_001",
+    "keymap": "meatcar",
+    "modules": ["drashna/pointing_device_accel"]
+}

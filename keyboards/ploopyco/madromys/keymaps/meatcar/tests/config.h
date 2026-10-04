@@ -5,6 +5,7 @@
 
 #include "test_common.h"
 #include "../config.h"
+#include "../../../../../../modules/drashna/pointing_device_accel/config.h"
 
 #define TRANSIENT_EEPROM_SIZE 2048
 #define DYNAMIC_KEYMAP_LAYER_COUNT 8

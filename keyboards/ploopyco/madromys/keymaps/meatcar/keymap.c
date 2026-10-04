@@ -6,6 +6,7 @@
 // NOTE: Stock layout retained; custom behavior added 2026-10-04. Sources: README.md.
 
 #include QMK_KEYBOARD_H
+#include "pointing_device_accel.h"
 
 enum layers { NORMAL, STRAIGHTENED };
 
@@ -149,6 +150,10 @@ static int8_t scroll_steps(int32_t *remainder, uint8_t divisor) {
     if (steps < -127) steps = -127;
     *remainder -= steps * divisor;
     return steps;
+}
+
+bool pointing_device_accel_should_process(void) {
+    return !(layer_state & (1u << STRAIGHTENED)) && !scroll_held && !scroll_latched;
 }
 
 report_mouse_t pointing_device_task_user(report_mouse_t report) {

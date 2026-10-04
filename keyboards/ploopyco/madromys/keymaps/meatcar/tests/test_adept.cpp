@@ -7,6 +7,7 @@
 
 extern "C" {
 #include "adept.h"
+#include "pointing_device_accel.h"
 #include "raw_hid.h"
 
 static uint16_t sensor_cpi;
@@ -35,6 +36,8 @@ class Adept : public TestFixture {
         eeconfig_init_quantum();
         keyboard_init();
         pd_clear_movement();
+        EXPECT_TRUE(pointing_device_accel_get_enabled());
+        pointing_device_accel_enabled(false);
     }
 
     void press(KeymapKey key) {
@@ -84,6 +87,72 @@ class Adept : public TestFixture {
         ASSERT_EQ(packet[0], id_custom_save);
     }
 };
+
+class AdeptAcceleration : public Adept {
+   protected:
+    void SetUp() override {
+        Adept::SetUp();
+        pointing_device_accel_enabled(true);
+        report_mouse_t motion = {};
+        motion.x              = 1;
+        pointing_device_task_modules(motion);
+    }
+};
+
+TEST_F(AdeptAcceleration, MacLayerDoesNotAcceleratePointerMotion) {
+    TestDriver driver;
+    idle_for(201);
+    chord(back, right);
+    EXPECT_EQ(layer_state, 2);
+    EXPECT_MOUSE_REPORT(driver, (40, -24, 0, 0, 0));
+    move(40, 24);
+    chord(back, right);
+    EXPECT_EQ(layer_state, 0);
+    idle_for(201);
+    EXPECT_MOUSE_REPORT(driver, (8, -4, 0, 0, 0));
+    move(40, 24);
+}
+
+TEST_F(AdeptAcceleration, NormalLayerUsesTheDefaultSlowToFastCurve) {
+    TestDriver driver;
+    EXPECT_FLOAT_EQ(pointing_device_accel_get_takeoff(), 2.0f);
+    EXPECT_FLOAT_EQ(pointing_device_accel_get_growth_rate(), 0.25f);
+    EXPECT_FLOAT_EQ(pointing_device_accel_get_offset(), 2.2f);
+    EXPECT_FLOAT_EQ(pointing_device_accel_get_limit(), 0.2f);
+    idle_for(201);
+    EXPECT_MOUSE_REPORT(driver, (-8, -4, 0, 0, 0));
+    move(-40, 24);
+    EXPECT_MOUSE_REPORT(driver, (-40, -24, 0, 0, 0));
+    move(-40, 24);
+}
+
+TEST_F(AdeptAcceleration, HeldAndLatchedScrollingBypassAccelerationInBothModes) {
+    TestDriver driver;
+    idle_for(201);
+    press(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 3, 5, 0));
+    move(24, -40);
+    release(scroll);
+    tap_key(scroll);
+    idle_for(201);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 3, 5, 0));
+    move(24, -40);
+    chord(back, right);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 0, 5, 0));
+    move(24, -40);
+    tap_key(scroll);
+    press(scroll);
+    EXPECT_MOUSE_REPORT(driver, (0, 0, 3, 0, 0));
+    move(24, 0);
+    release(scroll);
+}
+
+TEST_F(AdeptAcceleration, ExtendedReportsPreserveLargePointerMovement) {
+    TestDriver driver;
+    idle_for(201);
+    EXPECT_MOUSE_REPORT(driver, (16384, 8192, 0, 0, 0));
+    move(16384, -8192);
+}
 
 TEST_F(Adept, StockLayoutAndDefaults) {
     TestDriver     driver;
@@ -561,6 +630,8 @@ TEST_F(Adept, ViaSavePreservesSettingsAndDpiButNotTransientModes) {
     keyboard_init();
     EXPECT_EQ(layer_state, 0);
     EXPECT_EQ(default_layer_state, 1);
+    EXPECT_TRUE(pointing_device_accel_get_enabled());
+    pointing_device_accel_enabled(false);
     EXPECT_MOUSE_REPORT(driver, (16, 24, 0, 0, 0));
     move(16, -24);
 }
