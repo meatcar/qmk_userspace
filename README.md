@@ -1,7 +1,6 @@
 # QMK userspace
 
-Personal [QMK userspace](https://docs.qmk.fm/newbs_external_userspace) for
-Leopold FC660C controllers and a Ploopy Adept trackball.
+Personal [QMK userspace](https://docs.qmk.fm/newbs_external_userspace) for all my QMK-able devices.
 
 | Device | Keymap | Configuration |
 | ------ | ------ | ------------- |
@@ -9,12 +8,6 @@ Leopold FC660C controllers and a Ploopy Adept trackball.
 | `cipulot/ec_660c` | `meatcar` | Cipulot controller, STM32F401; keyboard map with VIA and EC settings |
 | `ploopyco/madromys/rev1_001` | [`meatcar`](keyboards/ploopyco/madromys/keymaps/meatcar/README.md) | Ploopy Adept, RP2040; scrolling, straightening, pointer acceleration and VIA settings |
 | `fc660c` | [`via`](keyboards/fc660c/keymaps/via/README.md) | Hasu controller; stock-style defaults with VIA remapping, built separately |
-
-The keyboard `meatcar` maps share the ANSI typing layout and Fn navigation
-bindings. Fn sits between right Alt and right Ctrl; tap it for Print Screen or
-hold it for layer 1. The EC660C also has Fn + grave for the bootloader, VIA
-remapping, and consumer media-key reports. The Hasu `meatcar` build disables VIA
-and consumer media-key reports. Its separate `via` map has different defaults.
 
 ## Setup and build
 
