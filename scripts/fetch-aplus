@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Copy the Ploopy A+ keyboard definition from Ploopy's QMK fork into qmk_firmware.
+# TODO: remove once ploopyco/aplus is in qmk/qmk_firmware.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+repo=https://github.com/ploopyco/qmk_firmware.git
+rev=ed6bc4231cc0c39f5f4c0ff82f0d5ad5d8ef7e6e # ploopyco/a+ branch
+paths=(
+    keyboards/ploopyco/aplus
+    keyboards/ploopyco/common/tmag5273wheel.c
+    keyboards/ploopyco/common/tmag5273wheel.h
+)
+
+echo "copying Ploopy A+ keyboard from $repo@${rev:0:7}"
+git -C qmk_firmware fetch --quiet --depth=1 "$repo" "$rev"
+git -C qmk_firmware archive "$rev" "${paths[@]}" | tar -x -C qmk_firmware

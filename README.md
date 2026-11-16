@@ -7,6 +7,7 @@ Personal [QMK userspace](https://docs.qmk.fm/newbs_external_userspace) for all m
 | `fc660c` | [`meatcar`](keyboards/fc660c/keymaps/meatcar/README.md) | Hasu controller, ATmega32U4; fixed keyboard map without VIA |
 | `cipulot/ec_660c` | `meatcar` | Cipulot controller, STM32F401; keyboard map with VIA and EC settings |
 | `ploopyco/madromys/rev1_001` | [`meatcar`](keyboards/ploopyco/madromys/keymaps/meatcar/README.md) | Ploopy Adept, RP2040; scrolling, straightening, pointer acceleration and VIA settings |
+| `ploopyco/aplus/rev2_001` | [`meatcar`](keyboards/ploopyco/aplus/keymaps/meatcar/README.md) | Ploopy A+, RP2040; Ploopy's stock keymap, knobs, gestures and VIA; keyboard from Ploopy's fork |
 | `fc660c` | [`via`](keyboards/fc660c/keymaps/via/README.md) | Hasu controller; stock-style defaults with VIA remapping, built separately |
 
 ## Setup and build
@@ -31,12 +32,16 @@ qmk userspace-compile
 qmk compile -kb fc660c -km meatcar
 qmk compile -kb cipulot/ec_660c -km meatcar
 qmk compile -kb ploopyco/madromys/rev1_001 -km meatcar
+qmk compile -kb ploopyco/aplus/rev2_001 -km meatcar
 # Optional Hasu VIA map, not registered in qmk.json:
 qmk compile -kb fc660c -km via
 ```
 
-[qmk.json](qmk.json) registers the three `meatcar` targets for local batch builds
-and CI. Firmware outputs appear in the repository root and are ignored by VCS.
+[qmk.json](qmk.json) registers the four `meatcar` targets for local batch builds
+and CI. QMK does not include the A+ yet; `scripts/sync-qmk` and CI run
+[scripts/fetch-aplus](scripts/fetch-aplus) to copy its keyboard definition from
+Ploopy's fork into `qmk_firmware/`. Firmware outputs appear in the repository
+root and are ignored by VCS.
 
 ## Tests
 
@@ -78,6 +83,14 @@ with the controller's reset button, then run:
 qmk flash -kb fc660c -km meatcar
 # Or use -km via for the separate VIA map.
 ```
+
+### Ploopy A+
+
+The A+ `meatcar` keymap is Ploopy's stock keymap, ready to customize. See the
+[A+ guide](keyboards/ploopyco/aplus/keymaps/meatcar/README.md) for controls.
+To flash, unplug the A+, hold the bottom-left button, and plug it back in. Copy
+`ploopyco_aplus_rev2_001_meatcar.uf2` to the USB drive that appears. Holding
+bottom-left also resets saved options and VIA mappings.
 
 ### Ploopy Adept
 

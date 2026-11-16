@@ -11,3 +11,4 @@ echo "syncing qmk_firmware -> $ref"
 git -C qmk_firmware fetch --tags origin
 git -C qmk_firmware checkout "$ref"
 git -C qmk_firmware submodule update --init --recursive
+./scripts/fetch-aplus

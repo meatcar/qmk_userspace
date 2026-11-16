@@ -13,6 +13,7 @@ jobs:
       qmk_repo: qmk/qmk_firmware
       # renovate: datasource=github-tags depName=qmk/qmk_firmware
       qmk_ref: 0.33.8
+      preparation_command: ./scripts/fetch-aplus
 
   publish:
     name: 'QMK Userspace Publish'

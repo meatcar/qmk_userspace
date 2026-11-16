@@ -1,4 +1,6 @@
-# Drashna pointing-device acceleration
+# Drashna pointing-device modules
+
+## Acceleration
 
 The seven files in `pointing_device_accel/` are copied unchanged from
 [drashna/qmk_modules at eb0ea42](https://github.com/drashna/qmk_modules/tree/eb0ea42b4a0179b562071dc36eeba4a1c0d10873/pointing_device_accel).
@@ -22,3 +24,16 @@ The existing DPI, scrolling, and timing menus and EEPROM layout are unchanged.
 
 See the [Adept guide](../../keyboards/ploopyco/madromys/keymaps/meatcar/README.md#pointer-acceleration)
 for the configured behavior and tuning instructions.
+
+## Gestures
+
+The five files in `pointing_device_gestures/` are copied unchanged from
+[drashna/qmk_modules at eb0ea42](https://github.com/drashna/qmk_modules/tree/eb0ea42b4a0179b562071dc36eeba4a1c0d10873/pointing_device_gestures),
+the same revision as acceleration. They match the revision that Ploopy's A+
+firmware pins, and require community-module API 1.1.0. The
+[upstream README](https://github.com/drashna/qmk_modules/blob/eb0ea42b4a0179b562071dc36eeba4a1c0d10873/pointing_device_gestures/README.md)
+is not vendored.
+
+Only the A+ selects this module, together with acceleration, through its
+[keymap.json](../../keyboards/ploopyco/aplus/keymaps/meatcar/keymap.json). The
+keymap overrides `pointing_device_gestures_trigger()` to send its own shortcuts.
